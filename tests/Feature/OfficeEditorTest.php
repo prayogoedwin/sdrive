@@ -40,6 +40,7 @@ class OfficeEditorTest extends TestCase
         $this->assertSame('edit', $config['editorConfig']['mode']);
         $this->assertSame('word', $config['documentType']);
         $this->assertSame($item->id.'-1', $config['document']['key']);
+        $this->assertFalse($config['document']['permissions']['download']);
 
         $this->actingAs($owner)
             ->get(route('office.show', $item))

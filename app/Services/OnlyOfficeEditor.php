@@ -59,7 +59,7 @@ class OnlyOfficeEditor
                 'url' => URL::signedRoute('office.file', ['item' => $item->id]),
                 'permissions' => [
                     'edit' => $edit,
-                    'download' => true,
+                    'download' => false,
                     'print' => true,
                 ],
             ],
