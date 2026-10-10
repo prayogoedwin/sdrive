@@ -1,0 +1,57 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+    --color-ink: #07090f;
+    --color-panel: #10141c;
+    --color-raised: #181e2a;
+    --color-line: #2c3548;
+    --color-mist: #93a0b8;
+    --color-paper: #e8eef8;
+    --color-accent: #3ee0c5;
+    --color-accent-ink: #06241e;
+    --color-violet: #8b93ff;
+}
+
+@layer base {
+    html,
+    body {
+        height: 100%;
+    }
+
+    ::selection {
+        background: #3ee0c5;
+        color: #06241e;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: #2c3548 transparent;
+    }
+}
+
+@layer components {
+    .field {
+        @apply w-full rounded-xl border border-line bg-ink px-3 py-2.5 text-sm text-paper outline-none transition placeholder:text-mist/70 focus:border-accent focus:ring-2 focus:ring-accent/30;
+    }
+
+    .btn-primary {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink transition hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .btn-ghost {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-mist transition hover:bg-white/5 hover:text-paper;
+    }
+
+    .btn-danger {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl bg-rose-500/15 px-3 py-2 text-sm font-medium text-rose-300 transition hover:bg-rose-500/25;
+    }
+}
