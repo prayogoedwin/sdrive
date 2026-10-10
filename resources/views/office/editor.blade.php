@@ -15,7 +15,23 @@
     </div>
     <div id="editor" class="h-[calc(100dvh-3rem)]"></div>
     <script>
-        new DocsAPI.DocEditor('editor', @json($config));
+        let editor;
+        const config = @json($config);
+        config.events = {
+            onRequestRefreshFile: function () {
+                fetch(@json($configUrl), {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                }).then(function (response) {
+                    return response.json();
+                }).then(function (fresh) {
+                    editor.refreshFile(fresh);
+                });
+            },
+        };
+        editor = new DocsAPI.DocEditor('editor', config);
     </script>
 </body>
 </html>

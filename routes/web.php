@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/drive/items/{item}/unduh', [DriveFileController::class, 'download'])->name('drive.download');
         Route::get('/drive/items/{item}/pratinjau', [DriveFileController::class, 'preview'])->name('drive.preview');
         Route::get('/office/{item}', [OfficeEditorController::class, 'show'])->name('office.show');
+        Route::get('/office/{item}/konfigurasi', [OfficeEditorController::class, 'config'])->name('office.config');
 
         Route::middleware('account.manager')->group(function (): void {
             Route::get('/pengguna', UserManager::class)->name('users.index');

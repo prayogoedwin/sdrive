@@ -7,6 +7,7 @@ use App\Services\DriveAccess;
 use App\Services\OnlyOfficeEditor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -25,7 +26,16 @@ class OfficeEditorController extends Controller
             'item' => $item,
             'serverUrl' => $this->office->url(),
             'config' => $this->office->config($request->user(), $item),
+            'configUrl' => route('office.config', $item),
         ]);
+    }
+
+    public function config(Request $request, DriveItem $item): JsonResponse
+    {
+        abort_unless($this->office->enabled() && $this->office->supports($item), 404);
+        abort_unless($this->access->canView($request->user(), $item), 403);
+
+        return response()->json($this->office->config($request->user(), $item));
     }
 
     public function file(DriveItem $item): BinaryFileResponse
@@ -50,7 +60,12 @@ class OfficeEditorController extends Controller
             $this->office->applySavedFile($item, $this->office->callbackPayload($request));
         } catch (HttpException $exception) {
             throw $exception;
-        } catch (\Throwable) {
+        } catch (\Throwable $exception) {
+            Log::warning('OnlyOffice gagal menyimpan berkas.', [
+                'item' => $item->id,
+                'message' => $exception->getMessage(),
+            ]);
+
             return response()->json(['error' => 1]);
         }
 

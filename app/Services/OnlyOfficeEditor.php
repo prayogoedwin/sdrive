@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use RuntimeException;
+use Throwable;
 
 class OnlyOfficeEditor
 {
@@ -53,7 +54,7 @@ class OnlyOfficeEditor
         $config = [
             'document' => [
                 'fileType' => $extension,
-                'key' => substr(hash('sha256', $item->id.'|'.$item->updated_at?->getTimestamp().'|'.$item->size), 0, 32),
+                'key' => $this->documentKey($item),
                 'title' => $item->name,
                 'url' => URL::signedRoute('office.file', ['item' => $item->id]),
                 'permissions' => [
@@ -136,6 +137,10 @@ class OnlyOfficeEditor
             abort(403);
         }
 
+        if (isset($payload['payload']) && is_array($payload['payload'])) {
+            return $payload['payload'];
+        }
+
         return $payload;
     }
 
@@ -157,26 +162,71 @@ class OnlyOfficeEditor
         $contents = $this->download($url);
         Storage::disk('local')->put((string) $item->storage_path, $contents);
         $item->size = strlen($contents);
+        $item->office_version = $this->version($item) + 1;
         $item->save();
+    }
+
+    private function documentKey(DriveItem $item): string
+    {
+        return $item->id.'-'.$this->version($item);
+    }
+
+    private function version(DriveItem $item): int
+    {
+        $version = (int) $item->office_version;
+
+        return $version > 0 ? $version : 1;
     }
 
     private function download(string $url): string
     {
-        $response = Http::timeout(60)->get($url);
-        if (! $response->successful()) {
-            $internal = (string) config('sdrive.onlyoffice.internal_url');
-            $parts = parse_url($url);
-            if ($internal !== '' && isset($parts['path'])) {
-                $path = $parts['path'].(isset($parts['query']) ? '?'.$parts['query'] : '');
-                $response = Http::timeout(60)->get($internal.$path);
+        foreach ($this->downloadUrls($url) as $candidate) {
+            try {
+                $response = Http::timeout(60)->connectTimeout(5)->get($candidate);
+            } catch (Throwable) {
+                continue;
+            }
+
+            if (! $response->successful()) {
+                continue;
+            }
+
+            $body = $response->body();
+            if ($body === '' || str_starts_with(ltrim($body), '<')) {
+                continue;
+            }
+
+            return $body;
+        }
+
+        throw new RuntimeException('OnlyOffice tidak mengembalikan file.');
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function downloadUrls(string $url): array
+    {
+        $urls = [];
+        $internal = (string) config('sdrive.onlyoffice.internal_url');
+        $parts = parse_url($url);
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        $path = ($parts['path'] ?? '').(isset($parts['query']) ? '?'.$parts['query'] : '');
+
+        if ($internal !== '' && $path !== '' && in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
+            $urls[] = $internal.$path;
+        }
+
+        $urls[] = $url;
+
+        if ($internal !== '' && $path !== '') {
+            $rewritten = $internal.$path;
+            if (! in_array($rewritten, $urls, true)) {
+                $urls[] = $rewritten;
             }
         }
 
-        if (! $response->successful()) {
-            throw new RuntimeException('OnlyOffice tidak mengembalikan file.');
-        }
-
-        return $response->body();
+        return $urls;
     }
 
     private function secret(): string
